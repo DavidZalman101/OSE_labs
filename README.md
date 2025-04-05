@@ -1,5 +1,3 @@
-# OSE_lab01 answers
-
 === This template file contains questions you need to answer.
 === Fill your answers on appropriate blank lines only.
 === Don't start any line with three equal signs "===".
@@ -125,8 +123,12 @@ TODO: ask the TA is this is correct
 === Q What functions from console.c are directly used by printf.c?
 ===   (just function names separated by spaces, not full declarations)
 
+cputchar 
+
 === Q What is the task of console.c lines 194-202?
 ===   (free form, up to 10 words)
+
+Checks and adjusts the content of the screen if moved past end of screen.
 
 ===   Consider the code
 ===   	int x = 1, y = 3, z = 4;
