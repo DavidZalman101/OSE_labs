@@ -83,16 +83,26 @@ bootmain
 
 === Q What's the link address of .text section of the kernel?
 
+0xf0100000
+
 === Q What's the entry point (start address) of the kernel?
+
+0x10000c
 
 === Q What source file contains the first kernel instruction?
 ===   (file name including extensions, but excluding the path)
 
+entry.S
+
 === Q Study the file you've just found.
 ===   What's the name of a kernel entry point as appears in this file?
 
+entry
+
 === Q What line among all kernel sources declares the name you've just
 ===   found as kernel entry point? (full line)
+
+.globl		_start
 
 === Q What's the first instruction which would "break" if you were to
 ===   get the boot loader's link address wrong? "Break" here means: 
@@ -101,9 +111,16 @@ bootmain
 ===   Check yourself by recompiling & debugging!
 ===   (address & instruction)
 
+TODO: ask the TA is this is correct
+	  when I run with -T0x7C10 (instead of 0x7C00)
+	  it couldn't get to the first instruction of the kernel (0x10000c)
+0x7c1e:  lgdtw  0x7c64
+
 === Q What's the first instruction after the kernel establishes a new
 ===   mapping that would fail to work properly if the mappings were
 ===   not in place? (address & instruction)
+
+0xf010002f:      mov    $0x0,%ebp
 
 === Q What functions from console.c are directly used by printf.c?
 ===   (just function names separated by spaces, not full declarations)
