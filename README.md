@@ -139,8 +139,12 @@ Checks and adjusts the content of the screen if moved past end of screen.
 === Q What's the contents of the first byte in memory pointed to by
 ===   fmt? (write this byte as a number)
 
+0x78
+
 === Q What's the contents of the first byte in memory pointed to by
 ===   ap? (write this byte as a number)
+
+0x01
 
 ===   Consider the code
 ===     unsigned int i = 0x00646c72;
@@ -148,14 +152,22 @@ Checks and adjusts the content of the screen if moved past end of screen.
 
 === Q What is the output of the code?
 
+HE110 World
+
 === Q To lead to the same output in big-endian architecture, what
 ===   should be the value of the second argument?
+
+57616
 
 === Q To lead to the same output in big-endian architecture, what
 ===   should be the value of i?
 
+0x726c6400
+
 === Q What is printed after "y=" for cprintf("x=%d y=%d", 3)?
 ===   (free form, up to 10 words)
+
+garbage
 
 === Q What instruction reserves space for kernel stack?
 ===   (address & instruction)
