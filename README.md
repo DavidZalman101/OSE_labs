@@ -172,6 +172,10 @@ garbage
 === Q What instruction reserves space for kernel stack?
 ===   (address & instruction)
 
+TODO: not sure if this "reserves space"
+0xf0100034:    mov    $0xf0110000,%esp
+
 === Q How many 32-bit words (i.e. bytes/4) does each recursive nesting
 ===   level of test_backtrace adds to the stack size?
 
+8
