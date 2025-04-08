@@ -115,7 +115,7 @@ entry
 ===   mapping that would fail to work properly if the mappings were
 ===   not in place? (address & instruction)
 
-0xf010002f:      mov    $0x0,%ebp
+0x10002a:      jmp	*%eax
 
 === Q What functions from console.c are directly used by printf.c?
 ===   (just function names separated by spaces, not full declarations)
