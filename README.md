@@ -32,7 +32,7 @@ Real Time Clock
 === Q What's the instruction performed immediately after the processor
 ===   is switched to 32-bit mode? (address & instruction)
 
-0x7c32:      mov    $0xd88e0010,%eax
+0x7c32:      mov    $0x10,%ax
 
 === Q What is the last instruction of boot loader? (address & instruction)
 
@@ -109,9 +109,6 @@ entry
 ===   Check yourself by recompiling & debugging!
 ===   (address & instruction)
 
-TODO: ask the TA is this is correct
-	  when I run with -T0x7C10 (instead of 0x7C00)
-	  it couldn't get to the first instruction of the kernel (0x10000c)
 0x7c1e:  lgdtw  0x7c64
 
 === Q What's the first instruction after the kernel establishes a new
@@ -172,7 +169,6 @@ garbage
 === Q What instruction reserves space for kernel stack?
 ===   (address & instruction)
 
-TODO: not sure if this "reserves space"
 0xf0100034:    mov    $0xf0110000,%esp
 
 === Q How many 32-bit words (i.e. bytes/4) does each recursive nesting
