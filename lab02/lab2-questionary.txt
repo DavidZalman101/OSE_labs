@@ -17,8 +17,7 @@
 ===   0xeebfe000-0xeebff000 inaccessible?
 ===   (free form, up to 10 words)
 
-TODO: check
-Guard User Exception stack overflow/invalid accesses.
+page guard, catch overflows from User Exception Stack.
 
 === Q Define a page table entry with the following properties:
 ===   frame starts at 0x1234000. It can be written by the kernel
@@ -28,7 +27,7 @@ Guard User Exception stack overflow/invalid accesses.
 ===   responsible for above properties are set to zero.  
 ===   (a single memory WORD as would be output by gdb's x/1x)
 
-0x01234025
+0x1234025
 
 === Q Consider JOS kernel code:
 ===     mystery_t x;
@@ -72,25 +71,39 @@ uintptr_t
 ===   kernel memory?
 ===   (free form, up to 15 words)
 
+Paging protection, when CPL=3 only entries with PTE_U set are accessible.
+
 === Q Which virtual addresses are readable by the user?
 ===   (in the form ADDR1-ADDR2, if none, specify NONE)
 
+0xef000000-0xef404000
+
 === Q Which virtual addresses are writable by the user?
 ===   (in the form ADDR1-ADDR2, if none, specify NONE)
+
+NONE
 
 === Q Assume a hacker can change N bits inside page table (on any
 ===   level, PD or PT) after it has been set up by the kernel (and
 ===   before full TLB flush). What is the minimal N to gain full
 ===   control of the system from hacker's user space process?
 
+1
+
 === Q What's the maximum amount of physical memory this kernel can
 ===   support? (number of megabytes, without MB suffix)
+
+2048
 
 === Q What single constant can be changed in kernel source to make
 ===   this limit 2 times lower (if kernel normally supports 10MB,
 ===   we want to make it support only 5MB?
 
+PGSIZE
+
 === Q What value should this constant be changed to?
+
+512
 
 === Q Assume the computer has the maximum amount of memory supported
 ===   by the (unmodified) kernel. What's the overhead of managing this
@@ -108,6 +121,9 @@ uintptr_t
 ===    Format example (all the values are made up; omit the header):
 ===    SIZE  DATA-STRUCTURE         NAME/DESCRIPTION
 ===    42    "struct Segdesc gdt[]" "Global descriptor table"
+
+2048    "page tables entries"    "page table entires"
+4096    "struct PageInfo[]"      "meta data for pages"
 
 ====================================================================
 === Q What challenge(s) have you chosen to implement? (specify
