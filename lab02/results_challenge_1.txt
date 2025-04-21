@@ -1,0 +1,26 @@
+		NO PSE											PSE [KERNBASE, 2^32)		
+
+VPN range     Entry         Flags        Physical page				|	VPN range     Entry         Flags        Physical page
+										|
+[ef000-ef3ff]  PDE[3bc]     --------WP						|	[ef000-ef3ff]  PDE[3bc]     --------WP
+  [ef000-ef3ff]  PTE[000-3ff] -------U-P 00116-00515				|	  [ef000-ef3ff]  PTE[000-3ff] -------U-P 00116-00515
+[ef400-ef7ff]  PDE[3bd]     -------U-P						|	[ef400-ef7ff]  PDE[3bd]     -------U-P
+  [ef7bc-ef7bc]  PTE[3bc]     --------WP 003ff					|	  [ef7bc-ef7bc]  PTE[3bc]     --------WP 003ff
+  [ef7bd-ef7bd]  PTE[3bd]     -------U-P 00115					|	  [ef7bd-ef7bd]  PTE[3bd]     -------U-P 00115
+  [ef7bf-ef7bf]  PTE[3bf]     --------WP 003fe					|	  [ef7bf-ef7bf]  PTE[3bf]     --------WP 003fe
+  [ef7c0-ef7c0]  PTE[3c0]     ----A---WP 003fd					|	  [ef7c0-ef7c0]  PTE[3c0]     --SDA---WP 00000
+  [ef7c1-ef7ff]  PTE[3c1-3ff] --------WP 003fc 003fb 003fa 003f9 003f8 003f7 ..	|	  [ef7c1-ef7ff]  PTE[3c1-3ff] --S-----WP 00400 00800 00c00 01000 01400 01800 ..
+[efc00-effff]  PDE[3bf]     --------WP						|	[efc00-effff]  PDE[3bf]     --------WP
+  [efff8-effff]  PTE[3f8-3ff] --------WP 0010a-00111				|	  [efff8-effff]  PTE[3f8-3ff] --------WP 0010a-00111
+[f0000-f03ff]  PDE[3c0]     ----A---WP						|	[f0000-f03ff]  PDE[3c0]     --SDA---WP 00000-003ff
+  [f0000-f00b7]  PTE[000-0b7] --------WP 00000-000b7				|	[f0400-fffff]  PDE[3c1-3ff] --S-----WP 00400-0ffff
+  [f00b8-f00b8]  PTE[0b8]     ---DA---WP 000b8					|
+  [f00b9-f00ff]  PTE[0b9-0ff] --------WP 000b9-000ff				|
+  [f0100-f0102]  PTE[100-102] ----A---WP 00100-00102				|
+  [f0103-f0110]  PTE[103-110] --------WP 00103-00110				|
+  [f0111-f0111]  PTE[111]     ---DA---WP 00111					|
+  [f0112-f0113]  PTE[112-113] --------WP 00112-00113				|
+  [f0114-f0114]  PTE[114]     ---DA---WP 00114					|
+  [f0115-f03ff]  PTE[115-3ff] --------WP 00115-003ff				|
+[f0400-fffff]  PDE[3c1-3ff] --------WP						|
+  [f0400-fffff]  PTE[000-3ff] --------WP 00400-0ffff				|
