@@ -129,9 +129,93 @@ PGSIZE
 === Q What challenge(s) have you chosen to implement? (specify
 ===   challenge numbers separated by spaces, if more than one)
 
+1 2
+
 === Q If the challenge requires changing the kernel source, list the
 ===   files which you have changed/added during implementation.
 ===   (one file per line, relative to lab directory containing .git/)
 
+kern/pmap.c
+kern/monitor.c
+kern/monitor.h
+
 === Q Describe your solution.
 ===   (free form, up to 500 words, don't need to use all 500!)
+
+Challenge 1 - Page size
+	* Detected if PSE is supported by cpuid.
+	* If supported, enable PSE and map only the kern space with 4MB pages.
+
+	Results - qemu info pg
+
+	+---------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------+
+	|			NO PSE								|			PSE [KERNBASE, 2^32)						|
+	|	VPN range     Entry         Flags        Physical page				|	VPN range     Entry         Flags        Physical page				|
+	+---------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------+
+	|											|											|
+	|	[ef000-ef3ff]  PDE[3bc]     --------WP						|	[ef000-ef3ff]  PDE[3bc]     --------WP						|
+	|	  [ef000-ef3ff]  PTE[000-3ff] -------U-P 00116-00515				|	  [ef000-ef3ff]  PTE[000-3ff] -------U-P 00116-00515				|
+	|	[ef400-ef7ff]  PDE[3bd]     -------U-P						|	[ef400-ef7ff]  PDE[3bd]     -------U-P						|
+	|	  [ef7bc-ef7bc]  PTE[3bc]     --------WP 003ff					|	  [ef7bc-ef7bc]  PTE[3bc]     --------WP 003ff					|
+	|	  [ef7bd-ef7bd]  PTE[3bd]     -------U-P 00115					|	  [ef7bd-ef7bd]  PTE[3bd]     -------U-P 00115					|
+	|	  [ef7bf-ef7bf]  PTE[3bf]     --------WP 003fe					|	  [ef7bf-ef7bf]  PTE[3bf]     --------WP 003fe					|
+	|	  [ef7c0-ef7c0]  PTE[3c0]     ----A---WP 003fd					|	  [ef7c0-ef7c0]  PTE[3c0]     --SDA---WP 00000					|
+	|	  [ef7c1-ef7ff]  PTE[3c1-3ff] --------WP 003fc 003fb 003fa 003f9 003f8 003f7 .. |	  [ef7c1-ef7ff]  PTE[3c1-3ff] --S-----WP 00400 00800 00c00 01000 01400 01800 ..	|
+	|	[efc00-effff]  PDE[3bf]     --------WP						|	[efc00-effff]  PDE[3bf]     --------WP						|
+	|	  [efff8-effff]  PTE[3f8-3ff] --------WP 0010a-00111				|	  [efff8-effff]  PTE[3f8-3ff] --------WP 0010a-00111				|
+	|	[f0000-f03ff]  PDE[3c0]     ----A---WP						|	[f0000-f03ff]  PDE[3c0]     --SDA---WP 00000-003ff				|
+	|	  [f0000-f00b7]  PTE[000-0b7] --------WP 00000-000b7				|	[f0400-fffff]  PDE[3c1-3ff] --S-----WP 00400-0ffff				|
+	|	  [f00b8-f00b8]  PTE[0b8]     ---DA---WP 000b8					|											|
+	|	  [f00b9-f00ff]  PTE[0b9-0ff] --------WP 000b9-000ff				|											|
+	|	  [f0100-f0102]  PTE[100-102] ----A---WP 00100-00102				|											|
+	|	  [f0103-f0110]  PTE[103-110] --------WP 00103-00110				|											|
+	|	  [f0111-f0111]  PTE[111]     ---DA---WP 00111					|											|
+	|	  [f0112-f0113]  PTE[112-113] --------WP 00112-00113				|											|
+	|	  [f0114-f0114]  PTE[114]     ---DA---WP 00114					|											|
+	|	  [f0115-f03ff]  PTE[115-3ff] --------WP 00115-003ff				|											|
+	|	[f0400-fffff]  PDE[3c1-3ff] --------WP						|											|
+	|	  [f0400-fffff]  PTE[000-3ff] --------WP 00400-0ffff				|											|
+	|											|											|
+	+---------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------+
+
+	* An additional change we had to do:
+	* Removed the check_* functions, because they expect 4KB paging results.
+	* And we reordered the free_page_list, so the low address pages are first
+	* in the list. It ensures that we dont use >= 4MB address before the new
+	* paging directory is used.
+	*
+	* Note: Don't know why it was done initially in a check_* function, but we
+	* learned about it when debugging.
+	*
+	* To run it use: -DUSE_PSE
+
+Challenge 2 - Extend JOS monitor with commands to:
+	(1) Display useful info on mappings
+
+		Example:
+
+		K> showmappings 0xf0000000 0xf0005000
+		VA            PA       FLAGS
+		0xf0000000 -> 0x00000000 ---WP
+		0xf0001000 -> 0x00001000 DA-WP
+		0xf0002000 -> 0x00002000 DA-WP
+		0xf0003000 -> 0x00003000 DA-WP
+		0xf0004000 -> 0x00004000 DA-WP
+		0xf0005000 -> 0x00005000 DA-WP
+	
+	(2) Explicitly set/clear/change the permissions of any mapping in
+		the current address space
+		
+		Example:
+
+		K> permmap 0xf0000000 +DAU
+		Updated PTE at VA 0xf0000000: PTE = 0x00000000 DAUWP
+	
+	(3) Dump the contects of a range of memory - virtual
+		
+		Example:
+
+		K> dumpmem -v 0xf010000c 0xf010001c
+		0xf010000c: 66 c7 05 72 04 00 00 34 12 b8 00 70 11 00 0f 22
+
+	* Implementations were mainly using pgdir_walk.
