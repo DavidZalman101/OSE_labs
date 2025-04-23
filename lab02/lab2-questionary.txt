@@ -218,7 +218,7 @@ Challenge 2 - Extend JOS monitor with commands to:
 
 		K> dumpmem -v 0xf010000c 0xf010001c
 		0xf010000c: 66 c7 05 72 04 00 00 34 12 b8 00 70 11 00 0f 22
-		K> dumpmem -o 0x10000c 0x10001c
+		K> dumpmem -p 0x10000c 0x10001c
 		0xf010000c: 66 c7 05 72 04 00 00 34 12 b8 00 70 11 00 0f 22
 
 	* Implementations were mainly using pgdir_walk.
