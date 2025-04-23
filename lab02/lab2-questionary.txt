@@ -224,3 +224,52 @@ Challenge 2 - Extend JOS monitor with commands to:
 	* Implementations were mainly using pgdir_walk.
 	* For memdump -p, we added a function in kern/pmap.c that scans the table
 	* for a va that mapps to the wanted pa.
+
+Challenge 3 - Outline: Design allowing users full 4GB address space:
+	* Shared Trampoline:
+	*	A small block (page) of memory which both the user and the kernel
+	*	have mapping to. It will be incharge of the mode transitions between
+	*	the user and kernel.
+	*
+	*	The trampoline is mapped at a fixed virtual address (e.g. 0xFFFFF000)
+	*	in both pages tables (user/kernel) and marked as RO and executable.
+	*
+	*	User -> Kernel
+	*		When a syscall/interrupt occurs, bounce to the trampoline.
+	*		Execute the trampoline's code, saving the users process state
+	*		and switch the page table to the kernels page table, then jump
+	*		to kernel space (interrupt handler).
+	*
+	*	Kernel -> User
+	*		When the kernel is done, bounce back to the trampoline.
+	*		Switch back the page table, restore the user process state
+	*		and return to user mode.
+	*
+	*	Kernel accesss to physical memory & IO devices
+	*		The kernel has a private page table, where it can freely map
+	*		all of the physical memory, kernel and I/O. It does not include
+	*		any user mapping by default, improving isolation.
+	*
+	*	Kernel access user enviroment's virtual address space
+	*		"Bounce buffer":
+	*		The kernel identifices what user-space pages he needs.
+	*		Sets up temporary PTE's that map to those physical pages.
+	*		Then has access to user data.
+	*		These mapping must be removed after use to avoid stail pointers
+	*		leakes etc.
+	*
+	*	Disadvantages
+	*		(1) Performace overhead:
+	*			When switching modes the TLB is invalid and a new table needs
+	*			read. Also, when kernel wants to access User enviroment, he needs
+	*			to do more memory work (described above).
+	*
+	*		(2) More compilcated memory managment.
+	*
+	*	Advantages
+	*		(1) flexibility - Maximized User address space:
+	*			Allowing the user to access the entire 4GB virtual address space.
+	*
+	*		(2) Security - Improved kernel isolation:
+	*			By not being mapped from user space at all we avoide accidental
+	*			leaks.
