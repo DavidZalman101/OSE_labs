@@ -204,6 +204,8 @@ Challenge 2 - Extend JOS monitor with commands to:
 		0xf0004000 -> 0x00004000 DA-WP
 		0xf0005000 -> 0x00005000 DA-WP
 
+	* Implementation was mainly using pgdir_walk.
+
 	(2) Explicitly set/clear/change the permissions of any mapping in
 		the current address space
 
@@ -211,6 +213,8 @@ Challenge 2 - Extend JOS monitor with commands to:
 
 		K> permmap 0xf0000000 +DAU
 		Updated PTE at VA 0xf0000000: PTE = 0x00000000 DAUWP
+
+	* Implementation was mainly using pgdir_walk and tlb_invalidate.
 
 	(3) Dump the contects of a range of memory - virtual/physical
 
@@ -221,9 +225,9 @@ Challenge 2 - Extend JOS monitor with commands to:
 		K> dumpmem -p 0x10000c 0x10001c
 		0xf010000c: 66 c7 05 72 04 00 00 34 12 b8 00 70 11 00 0f 22
 
-	* Implementations were mainly using pgdir_walk.
-	* For memdump -p, we added a function in kern/pmap.c that scans the table
-	* for a va that mapps to the wanted pa.
+	* Implementation was mainly using pgdir_walk.
+	* For memdump -p, we made sure we are <= PHYTOP and took advantage
+	* of the easy mapping that the kernel has for all the physical addresss.
 
 Challenge 3 - Outline: Design allowing users full 4GB address space:
 	* Shared Trampoline:
