@@ -136,6 +136,7 @@ PGSIZE
 ===   (one file per line, relative to lab directory containing .git/)
 
 kern/pmap.c
+kern/pmap.h
 kern/monitor.c
 kern/monitor.h
 
@@ -202,20 +203,24 @@ Challenge 2 - Extend JOS monitor with commands to:
 		0xf0003000 -> 0x00003000 DA-WP
 		0xf0004000 -> 0x00004000 DA-WP
 		0xf0005000 -> 0x00005000 DA-WP
-	
+
 	(2) Explicitly set/clear/change the permissions of any mapping in
 		the current address space
-		
+
 		Example:
 
 		K> permmap 0xf0000000 +DAU
 		Updated PTE at VA 0xf0000000: PTE = 0x00000000 DAUWP
-	
-	(3) Dump the contects of a range of memory - virtual
-		
+
+	(3) Dump the contects of a range of memory - virtual/physical
+
 		Example:
 
 		K> dumpmem -v 0xf010000c 0xf010001c
 		0xf010000c: 66 c7 05 72 04 00 00 34 12 b8 00 70 11 00 0f 22
+		K> dumpmem -o 0x10000c 0x10001c
+		0xf010000c: 66 c7 05 72 04 00 00 34 12 b8 00 70 11 00 0f 22
 
 	* Implementations were mainly using pgdir_walk.
+	* For memdump -p, we added a function in kern/pmap.c that scans the table
+	* for a va that mapps to the wanted pa.
