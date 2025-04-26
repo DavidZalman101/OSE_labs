@@ -58,7 +58,7 @@ uintptr_t
 ===    42    0x98765 "struct Segdesc gdt[]" "Global descriptor table"
 ===    50    0x00011 ""                     "boot loader code"
 
-956    0xf011a000    "struct PageInfo[]"    "pages"
+956    0xef000000    "struct PageInfo[]"    "pages"
 957    0xf011a000    "pde_t*"               "kern_pgdir"
 959    0xefff8000    "uint32_t*"            "bootstack"
 960    0xf0000000    ""                     "low mem"
@@ -93,17 +93,17 @@ NONE
 === Q What's the maximum amount of physical memory this kernel can
 ===   support? (number of megabytes, without MB suffix)
 
-2048
+256
 
 === Q What single constant can be changed in kernel source to make
 ===   this limit 2 times lower (if kernel normally supports 10MB,
 ===   we want to make it support only 5MB?
 
-PGSIZE
+KERNBASE
 
 === Q What value should this constant be changed to?
 
-512
+0xf8000000
 
 === Q Assume the computer has the maximum amount of memory supported
 ===   by the (unmodified) kernel. What's the overhead of managing this
@@ -122,8 +122,8 @@ PGSIZE
 ===    SIZE  DATA-STRUCTURE         NAME/DESCRIPTION
 ===    42    "struct Segdesc gdt[]" "Global descriptor table"
 
-2048    "page tables entries"    "page table entires"
-4096    "struct PageInfo[]"      "meta data for pages"
+256    "page tables entries"    "page table entires"
+512   "struct PageInfo[]"      "meta data for pages"
 
 ====================================================================
 === Q What challenge(s) have you chosen to implement? (specify
