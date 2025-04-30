@@ -54,9 +54,18 @@ Allows a user to exploit the kernel page fault handler, which might result in se
 ===   general protection fault?
 ===   (free form)
 
+The test could result in a general protection fault if the IDT entry
+for the breakpoint was initilized with DPL=0, which pervents user
+programs from invoking it. We set up the breakpoint handler with DPL=3
+to allow user-level int3 instructions to correctly trigger a breakpoint
+exception.
+
 === Q What do you think is the point of these mechanisms, particularly
 ===   in light of what the user/softint test program does? 
 ===   (free form, 1 sentence)
+
+The mechanisms ensure that user programs cannot misuse privileged exceptions
+enforcing separation between user and kernel mode for security and stability.
 
 === Q In Exercise 9, what causes the page fault which panics the
 ===   kernel when running user/breakpoint?
