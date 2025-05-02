@@ -71,6 +71,10 @@ enforcing separation between user and kernel mode for security and stability.
 ===   kernel when running user/breakpoint?
 ===   (free form, 1 sentence)
 
+The kernel's backtrace function allows the user stack up to ebp=USTACKTOP
+but only the page at USTACKTOP - PGSIZE is mapped, Attempting to read above
+causes a non-present page fault in kernel moade, leading to a panic.
+
 ====================================================================
 === Q What challenge(s) have you chosen to implement? (specify
 ===   challenge numbers separated by spaces, if more than one)
