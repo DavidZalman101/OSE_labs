@@ -79,7 +79,7 @@ causes a non-present page fault in kernel moade, leading to a panic.
 === Q What challenge(s) have you chosen to implement? (specify
 ===   challenge numbers separated by spaces, if more than one)
 
-1
+1 2
 
 === Q If the challenge requires changing the kernel source, list the
 ===   files which you have changed/added during implementation.
@@ -87,6 +87,8 @@ causes a non-present page fault in kernel moade, leading to a panic.
 
 kern/trapentry.S
 kern/trap.c
+kern/monitor.c
+kern/monitor.h
 
 === Q Describe you solution.
 ===   (free form, up to 500 words, don't need to use all 500!)
@@ -98,3 +100,18 @@ Challenge 1 - Clean up
 	* entry (struct { trapno, trapfunc, perm}).
 	* Resulting an array of struct TrapEntry, which is iterated
 	* in trap.c, instead of declaring all the traps once more.
+
+Challenge 2 - continue, single step (int3)
+	* trap_dispatch directs T_DEBUG and T_BRKPT to the monitor
+	* mon_continue makes sure that the FL_TF flag in the eflags is off.
+	* moc_step makes sure to turn on the FL_TF flag.
+	*
+	* In order to continue, all the kernel needs to do, is return from the monitor
+	* back to trap_dispatch, which will return to where the interupt happened.
+	*
+	* In order to step, the monitor must turn on the TF flag in the trap frame
+	* so the CPU will do the following when back in user space:
+	*    execute 1 instruction
+	*    interrupt for DEBUG.
+	*
+	* Note: the mon_continue turns off the TF to let go of the single step.
