@@ -89,16 +89,32 @@ and destroy the current running environment.
 ===   at what address is it mapped in env B?
 ===   (ADDR(in env A):ADDR(in env B) (example: 0xAAAAAAAA:0xBBBBBBBB)
 
-UTEXT:UTEMP
 0x00800000:0x00400000
 
 ====================================================================
 === Q What challenge(s) have you chosen to implement? (specify
 ===   challenge numbers separated by spaces, if more than one)
 
+8
+
 === Q If the challenge requires changing the kernel source, list the
 ===   files which you have changed/added during implementation.
 ===   (one file per line, relative to lab directory containing .git/)
 
+inc/env.h
+kern/syscall.c
+
 === Q Describe you solution.
 ===   (free form, up to 500 words, don't need to use all 500!)
+
+Challenge 8 - ipc_send with no loop
+	When a ipc_send sees that a reciever is waiting to send data
+	he will imediatly will send the data. Otherwise, he will leave
+	the data he wanted to send in his Env structure and go to sleep.
+
+	When a reciver requests to read data, before going to sleep (as
+	he did before) he'll first check if anyone tried sending him data.
+	If he found no one tried to before, he'll go to sleep. Otherwise,
+	he'll collect the data waited for him, and wake them up.
+
+	Add -DIPC_SEND_NO_LOOP to compile with this solution
