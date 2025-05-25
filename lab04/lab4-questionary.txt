@@ -59,7 +59,7 @@ To avoid this, each CPU has its own kernel stack.
 ===   can be restored properly later. Where does this happen?
 ===   (JOS function name)
 
-trap
+_alltraps
 
 === Q In your implementation of env_run() you should have called
 ===   lcr3(). Before and after the call to lcr3(), your code makes
