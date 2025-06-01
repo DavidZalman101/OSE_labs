@@ -38,13 +38,34 @@ the full register state, including EFLAGS, using iret.
 === Q How long approximately did it take you to do this lab?
 ===   (number of hours for all partners combined)
 
+10
+
 ====================================================================
 === Q What challenge(s) have you chosen to implement? (specify
 ===   challenge numbers separated by spaces, if more than one)
+
+2
 
 === Q If the challenge requires changing the kernel source, list the
 ===   files which you have changed/added during implementation.
 ===   (one file per line, relative to lab directory containing .git/)
 
+fs/bc.c
+
 === Q Describe you solution.
 ===   (free form, up to 500 words, don't need to use all 500!)
+
+Created bc_evict function which looks for a block that might be hogging
+space. Meaning, it's mappes but haven't been used recently. If it finds one,
+it unmapps it. It does so by looking at the PTE_A bit, if it was on, turn it off.
+Therefore, next time we check the block, if PTE_A is on, it means that the block
+is not hogging, otherwise it is, and should be cleared. When cleaning a block, we
+flush it if needed.
+
+bc_evict can be called with any policy, OOM, limiting cache size etc.
+For testing I've added a cache limiting, when the bc is using too much
+memory for cacheing, we try to clear it. The check for cache limiting
+is checked at the bc_pgfault.
+
+
+Use the -DBC_EVICT flag to compile with the bc_evict.
