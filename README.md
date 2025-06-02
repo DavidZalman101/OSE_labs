@@ -1,41 +1,35 @@
-# JOS: My MIT Operating System Project
+# JOS: Educational Operating System – Technion CS Project
 
-This repository contains my personal implementation of **JOS**, an educational operating system developed as part of MIT's [6.828: Operating System Engineering](https://pdos.csail.mit.edu/6.828/2022/) course.
+This repository contains my personal implementation of **JOS**, an educational operating system developed as part of a computer science course at the **Technion – Israel Institute of Technology**.
 
-JOS is a Unix-like teaching operating system written in C and x86 assembly. It runs on the x86 architecture and is designed to help understand fundamental OS concepts like virtual memory, processes, file systems, and kernels.
+JOS is originally based on MIT's [6.828: Operating System Engineering](https://pdos.csail.mit.edu/6.828/) labs. The goal of the project is to gain hands-on experience building a Unix-like operating system from the ground up using C and x86 assembly.
 
-## 📁 Structure
+## 📁 Project Structure
 
-The project is organized into a series of labs, each building on the previous one:
+The project is divided into a series of labs, each focused on core operating system concepts:
 
-- `lab1`: Boot loader and low-level hardware initialization
-- `lab2`: Memory management and virtual memory setup
-- `lab3`: User environments and process management
-- `lab4`: Preemptive multitasking and kernel scheduling
-- `lab5`: File system support (optional lab)
+- **Lab 1** – Boot loader and kernel entry
+- **Lab 2** – Physical and virtual memory management
+- **Lab 3** – User environments and context switching
+- **Lab 4** – Multitasking and kernel preemption
+- **Lab 5** – File system (optional)
+  
+Each stage incrementally adds key functionality to the OS.
 
-Each lab is implemented in its own directory with self-contained code and documentation.
+## ✅ Features Implemented
 
-## 🚀 Features Implemented
+- Bootable x86 kernel with protected mode support
+- Page-based virtual memory and physical memory allocation
+- Environment abstraction for user programs
+- Trap handling and system calls
+- Round-robin and yield-based scheduling
+- Inter-process communication using syscalls
+- (Optional) File system and networking (if implemented)
 
-- A bootable kernel that runs in protected mode
-- Physical and virtual memory management using paging
-- User-level process loading and context switching
-- System call interface and user/kernel isolation
-- Round-robin and priority-based multitasking
-- Inter-process communication using message passing
-- Optional: Basic file system interface and networking stack
+## 🛠 Building and Running
 
-## 🛠 How to Build and Run
+**Requirements**:
 
-You'll need:
-
-- `gcc`, `make`, and `binutils`
-- `qemu` (recommended emulator)
-- A UNIX-like environment (Linux)
-
-To build and run the kernel using QEMU:
-
-```bash
-make
-make qemu
+- `gcc`, `make`, `binutils`
+- `qemu` (or another x86 emulator)
+- Linux or WSL environmen
