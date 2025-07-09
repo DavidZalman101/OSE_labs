@@ -1,0 +1,28 @@
+From ac896fad49eec4346335dc701be849b9d4ad6459 Mon Sep 17 00:00:00 2001
+From: DavidZalman101 <davidzalman.101@gmail.com>
+Date: Fri, 27 Jun 2025 15:25:21 +0300
+Subject: [PATCH 09/12] lab6 Question 1.
+
+---
+ answers-lab6.txt | 9 +++++++++
+ 1 file changed, 9 insertions(+)
+ create mode 100644 answers-lab6.txt
+
+diff --git a/answers-lab6.txt b/answers-lab6.txt
+new file mode 100644
+index 0000000..d5cfb44
+--- /dev/null
++++ b/answers-lab6.txt
+@@ -0,0 +1,9 @@
++Question 1
++	How did you structure your transmit implementation?
++	In particular, what do you do if the transmit ring is full?
++
++Answer
++	The E1000 driver does not busy-wait on the queue, when the tx_desc's full it returns with
++	an appropriate error value. With that informantion, the output_helper_env can be cpu mindful
++	by yeilding the cpu, while hoping that the next time it will awake, the queue won't be full
++	and a succesfull re-transmit will be completed.
+-- 
+1.9.1
+

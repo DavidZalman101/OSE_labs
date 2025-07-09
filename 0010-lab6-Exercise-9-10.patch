@@ -1,0 +1,284 @@
+From 263cbee5ec603bfccb1e74fb997a056d530015de Mon Sep 17 00:00:00 2001
+From: DavidZalman101 <davidzalman.101@gmail.com>
+Date: Sat, 28 Jun 2025 21:36:37 +0300
+Subject: [PATCH 10/12] lab6 - Exercise 9 + 10.
+
+---
+ kern/e1000.c |  54 ++++++++++++++++++---
+ kern/e1000.h | 154 +++++++++++++++++++++++++++++++++++++++++++----------------
+ 2 files changed, 160 insertions(+), 48 deletions(-)
+
+diff --git a/kern/e1000.c b/kern/e1000.c
+index 9c05b69..86ffa39 100644
+--- a/kern/e1000.c
++++ b/kern/e1000.c
+@@ -25,13 +25,8 @@ e1000_attach(struct pci_func *pcif)
+ 	// test - print the device status register - expecting 0x80080783
+ 	cprintf("E1000 status = [%x]\n", E1000_REG(E1000_STATUS));
+ 
+-	// Transmit Initialization
+ 	transmit_init();
+-
+-	// test - Transmit Packet
+-	//char *hello_str_packet = "hello";
+-	//transmit_packet((uint8_t*)hello_str_packet, 6);
+-
++	receive_init();
+ 	return 0;
+ }
+ 
+@@ -108,3 +103,50 @@ transmit_packet(void *buf, uint32_t buf_len)
+ 	E1000_REG(E1000_TDT) = (tail_idx + 1) % NTDX;
+ 	return 0;
+ }
++
++/*
++	Receive Initialization - 14.4
++	- Program the Receive Address Registers.
++	- Init the Multicast Table array.
++	- Allocate memory for receive descriptor list.
++	- Program the Receive Base Adress registers.
++	- Set the Receive Descriptor Length.
++	- Init the Receive Descriptor Head and Tail.
++	- Program the Receive Control Register.
++*/
++static void
++receive_init(void)
++{
++	int i;
++	// init Receive regs
++	E1000_REG(E1000_RAL) = DEFAULT_MAC_ADDRESS_LOW_ORDER;
++	E1000_REG(E1000_RAH) = DEFAULT_MAC_ADDRESS_HIGH_ORDER;
++	E1000_REG(E1000_RAH) |= E1000_RAH_AV;
++
++	// init MTA
++	E1000_REG(E1000_MTA) = 0;
++
++	// mem init
++	memset(rx_queue, 0, sizeof(rx_queue));
++	memset(rx_bufs, 0, sizeof(rx_bufs));
++	for (i = 0; i < NRDX; i++) {
++		memset(rx_bufs[i], 0, RDX_BUF_SIZE);
++		rx_queue[i].buf_addr = PADDR(rx_bufs[i]);
++	}
++
++	// base init
++	E1000_REG(E1000_RDBAL) = PADDR(rx_queue);
++	E1000_REG(E1000_RDBAH) = 0;
++
++	// len init
++	E1000_REG(E1000_RDLEN) = sizeof(rx_queue);
++
++	// head & tail init
++	E1000_REG(E1000_RDH) = 0;
++	E1000_REG(E1000_RDT) = NRDX - 1;
++
++	// control init
++	E1000_REG(E1000_RCTL) &= ~(E1000_RCTL_LBM | E1000_RDMTS |
++							   E1000_RCTL_SZ | E1000_RCTL_BSEX);
++	E1000_REG(E1000_RCTL) |= (E1000_RCTL_EN | E1000_RCTL_SECRC);
++}
+diff --git a/kern/e1000.h b/kern/e1000.h
+index 65805f2..a9d892d 100644
+--- a/kern/e1000.h
++++ b/kern/e1000.h
+@@ -9,6 +9,8 @@
+ // Defines
+ #define E1000_VEN_ID 0x8086
+ #define E1000_DEV_ID_82540EM 0x100E
++#define DEFAULT_MAC_ADDRESS_LOW_ORDER  0x12005452
++#define DEFAULT_MAC_ADDRESS_HIGH_ORDER 0x00005634
+ 
+ /*	Register Set.
+ 
+@@ -24,31 +26,31 @@
+ */
+ #define E1000_REG(offset) (*(volatile uint32_t*)(e1000_base + offset)) /* Read Register at offset */
+ 
+-#define E1000_CTRL     0x00000  /* Device Control - RW       */
+-#define E1000_STATUS   0x00008  /* Device Status - RO        */
+-#define E1000_TCTL     0x00400  /* Transmit Control - RW     */
+-#define E1000_TIPG     0x00410  /* Transmit Control - RW     */
+-#define E1000_TDBAL    0x03800  /* TX Base Address Low - RW  */
+-#define E1000_TDBAH    0x03804  /* TX Base Address High - RW */
+-#define E1000_TDLEN    0x03808  /* TX Length - RW            */
+-#define E1000_TDH      0x03810  /* TX Head - RW              */
+-#define E1000_TDT      0x03818  /* TX Tail - RW              */
++#define E1000_CTRL   0x00000 /* Device Control - RW       */
++#define E1000_STATUS 0x00008 /* Device Status - RO        */
++#define E1000_TCTL   0x00400 /* Transmit Control - RW     */
++#define E1000_TIPG   0x00410 /* Transmit Control - RW     */
++#define E1000_TDBAL  0x03800 /* TX Base Address Low - RW  */
++#define E1000_TDBAH  0x03804 /* TX Base Address High - RW */
++#define E1000_TDLEN  0x03808 /* TX Length - RW            */
++#define E1000_TDH    0x03810 /* TX Head - RW              */
++#define E1000_TDT    0x03818 /* TX Tail - RW              */
+ 
+ /* Transmit Control */
+-#define E1000_TCTL_RST    0x00000001    /* software reset */
+-#define E1000_TCTL_EN     0x00000002    /* enable tx */
+-#define E1000_TCTL_BCE    0x00000004    /* busy check enable */
+-#define E1000_TCTL_PSP    0x00000008    /* pad short packets */
+-#define E1000_TCTL_CT     0x00000ff0    /* collision threshold */
+-#define E1000_TCTL_COLD   0x003ff000    /* collision distance */
+-#define E1000_TCTL_SWXOFF 0x00400000    /* SW Xoff transmission */
+-#define E1000_TCTL_PBE    0x00800000    /* Packet Burst Enable */
+-#define E1000_TCTL_RTLC   0x01000000    /* Re-transmit on late collision */
+-#define E1000_TCTL_NRTU   0x02000000    /* No Re-transmit on underrun */
+-#define E1000_TCTL_MULR   0x10000000    /* Multiple request support */
+-
+-#define E1000_TCTL_CT_SHIFT       0x04    /* collision threshold shift */
+-#define E1000_TCTL_COLD_SHIFT     0x0c    /* collision distance shift  */
++#define E1000_TCTL_RST    0x00000001 /* software reset                */
++#define E1000_TCTL_EN     0x00000002 /* enable tx                     */
++#define E1000_TCTL_BCE    0x00000004 /* busy check enable             */
++#define E1000_TCTL_PSP    0x00000008 /* pad short packets             */
++#define E1000_TCTL_CT     0x00000ff0 /* collision threshold           */
++#define E1000_TCTL_COLD   0x003ff000 /* collision distance            */
++#define E1000_TCTL_SWXOFF 0x00400000 /* SW Xoff transmission          */
++#define E1000_TCTL_PBE    0x00800000 /* Packet Burst Enable           */
++#define E1000_TCTL_RTLC   0x01000000 /* Re-transmit on late collision */
++#define E1000_TCTL_NRTU   0x02000000 /* No Re-transmit on underrun    */
++#define E1000_TCTL_MULR   0x10000000 /* Multiple request support      */
++
++#define E1000_TCTL_CT_SHIFT   0x04 /* collision threshold shift */
++#define E1000_TCTL_COLD_SHIFT 0x0c /* collision distance shift  */
+ 
+ /* Transmit Descriptor Status */
+ #define E1000_TX_STAT_DD_SHIFT     0x00 /* TX Status DD     */
+@@ -57,29 +59,85 @@
+ #define E1000_TX_STAT_RSV_RU_SHIFT 0x03 /* TX Status RSV-TU */
+ 
+ /* Transmit Descriptor Command */
+-#define E1000_TX_CMD_EOP_SHIFT      0x00 /* TX CMD EOP     */
+-#define E1000_TX_CMD_IFCS_SHIFT     0x01 /* TX CMD IFCS    */
+-#define E1000_TX_CMD_IC_SHIFT       0x02 /* TX CMD IC      */
+-#define E1000_TX_CMD_RS_SHIFT       0x03 /* TX CMD RS      */
+-#define E1000_TX_CMD_RSV_RPS_SHIFT  0x04 /* TX CMD RSV_RPC */
+-#define E1000_TX_CMD_DEXT_SHIFT     0x05 /* TX CMD DEXT    */
+-#define E1000_TX_CMD_VLE_SHIFT      0x06 /* TX CMD VLE     */
+-#define E1000_TX_CMD_IDE_SHIFT      0x07 /* TX CMD IDE     */
++#define E1000_TX_CMD_EOP_SHIFT     0x00 /* TX CMD EOP     */
++#define E1000_TX_CMD_IFCS_SHIFT    0x01 /* TX CMD IFCS    */
++#define E1000_TX_CMD_IC_SHIFT      0x02 /* TX CMD IC      */
++#define E1000_TX_CMD_RS_SHIFT      0x03 /* TX CMD RS      */
++#define E1000_TX_CMD_RSV_RPS_SHIFT 0x04 /* TX CMD RSV_RPC */
++#define E1000_TX_CMD_DEXT_SHIFT    0x05 /* TX CMD DEXT    */
++#define E1000_TX_CMD_VLE_SHIFT     0x06 /* TX CMD VLE     */
++#define E1000_TX_CMD_IDE_SHIFT     0x07 /* TX CMD IDE     */
+ 
+ /* Transmit Descriptor TIPG */
+-# define E1000_TIPG_IPGT_MASK        0x000003FF
+-# define E1000_TIPG_IPGR1_MASK       0x000FFC00
+-# define E1000_TIPG_IPGR2_MASK       0x3FF00000
++# define E1000_TIPG_IPGT_MASK  0x000003FF
++# define E1000_TIPG_IPGR1_MASK 0x000FFC00
++# define E1000_TIPG_IPGR2_MASK 0x3FF00000
++
++/* Receive */
++#define E1000_RAL    0x05400 /* Receive Address Low - RW Array              */
++#define E1000_RAH    0x05404 /* Receive Address High - RW Array             */
++#define E1000_RAH_AV (1<<31) /* Receive Address High Address Valid - RW bit */
++#define E1000_MTA    0x05200 /* Multicast Table Array - RW Array            */
++#define E1000_RDBAL  0x02800 /* RX Descriptor Base Address Low - RW         */
++#define E1000_RDBAH  0x02804 /* RX Descriptor Base Address High - RW        */
++#define E1000_RDLEN  0x02808 /* RX Descriptor Length - RW                   */
++#define E1000_RDH    0x02810 /* RX Descriptor Head - RW                     */
++#define E1000_RDT    0x02818 /* RX Descriptor Tail - RW                     */
++#define E1000_RCTL   0x00100 /* RX Control - RW                             */
++
++/* Receive Control */
++#define E1000_RCTL_EN    0x00000002 /* enable                */
++#define E1000_RCTL_LBM   0x000000c0 /* loopback mode         */
++#define E1000_RDMTS      0x00000300 /* Min Threshold Size    */
++#define E1000_RCTL_SZ    0x00030000 /* rx buffer size        */
++#define E1000_RCTL_BSEX  0x02000000 /* Buffer size extension */
++#define E1000_RCTL_SECRC 0x04000000 /* strip ethernet CRC    */
++
++/* these buffer sizes are valid if E1000_RCTL_BSEX is 0 */
++#define E1000_RCTL_SZ_2048 0x00000000 /* rx buffer size 2048 */
++#define E1000_RCTL_SZ_1024 0x00010000 /* rx buffer size 1024 */
++#define E1000_RCTL_SZ_512  0x00020000 /* rx buffer size 512  */
++#define E1000_RCTL_SZ_256  0x00030000 /* rx buffer size 256  */
++
++/* Receive Descriptor STAT */
++#define E1000_RXD_STAT_DD    0x01   /* Descriptor Done         */
++#define E1000_RXD_STAT_EOP   0x02   /* End of Packet           */
++#define E1000_RXD_STAT_IXSM  0x04   /* Ignore checksum         */
++#define E1000_RXD_STAT_VP    0x08   /* IEEE VLAN Packet        */
++#define E1000_RXD_STAT_UDPCS 0x10   /* UDP xsum caculated      */
++#define E1000_RXD_STAT_TCPCS 0x20   /* TCP xsum calculated     */
++#define E1000_RXD_STAT_IPCS  0x40   /* IP xsum calculated      */
++#define E1000_RXD_STAT_PIF   0x80   /* passed in-exact filter  */
++#define E1000_RXD_STAT_IPIDV 0x200  /* IP identification valid */
++#define E1000_RXD_STAT_UDPV  0x400  /* Valid UDP checksum      */
++#define E1000_RXD_STAT_ACK   0x8000 /* ACK Packet indication   */
++
++/* Receive Descriptor ERR */
++#define E1000_RXD_ERR_CE   0x01 /* CRC Error               */
++#define E1000_RXD_ERR_SE   0x02 /* Symbol Error            */
++#define E1000_RXD_ERR_SEQ  0x04 /* Sequence Error          */
++#define E1000_RXD_ERR_CXE  0x10 /* Carrier Extension Error */
++#define E1000_RXD_ERR_TCPE 0x20 /* TCP/UDP Checksum Error  */
++#define E1000_RXD_ERR_IPE  0x40 /* IP Checksum Error       */
++#define E1000_RXD_ERR_RXE  0x80 /* Rx Data Error           */
++
++/* Receive Descriptor SPC */
++#define E1000_RXD_SPC_VLAN_MASK 0x0FFF /* VLAN ID is in lower 12 bits */
++#define E1000_RXD_SPC_PRI_MASK  0xE000 /* Priority is in upper 3 bits */
++#define E1000_RXD_SPC_PRI_SHIFT 13
++#define E1000_RXD_SPC_CFI_MASK  0x1000 /* CFI is bit 12 */
++#define E1000_RXD_SPC_CFI_SHIFT 12
+ 
+ // Errors
+-#define E1000_ERR_IVALID_ARG      1
+-#define E1000_ERR_TX_QUEUE_FULL   2
+-#define E1000_ERR_TX_PKT_TOO_BIG  3
++#define E1000_ERR_IVALID_ARG     1
++#define E1000_ERR_TX_QUEUE_FULL  2
++#define E1000_ERR_TX_PKT_TOO_BIG 3
+ 
+ // Constants
+-#define NTDX           64       /* Number of TDESC           */
+-#define TDX_BUF_SIZE  1536     /* Tranmist Buffer Size      */
+-
++#define NTDX         64   /* Number of TDESC      */
++#define TDX_BUF_SIZE 1536 /* Tranmist Buffer Size */
++#define NRDX         128  /* Number of RDESC      */
++#define RDX_BUF_SIZE 2048 /* Receive Buffer Size  */
+ 
+ // Structures
+ // Transmit Descriptor (TDESC) Layout - Legacy Mode
+@@ -93,15 +151,27 @@ struct tx_desc {
+ 	uint16_t special;
+ } __attribute__((packed));
+ 
++// Receive Descriptor (RDESC) Layout
++struct rx_desc {
++	uint64_t buf_addr;
++	uint16_t len;
++	uint16_t csum;
++	uint8_t status;
++	uint8_t errors;
++	uint16_t special;
++} __attribute__((packed));
++
+ // Globals vars
+ volatile uint8_t *e1000_base;
+ struct tx_desc tx_queue[NTDX] __attribute__((aligned(16)));
+ uint8_t tx_bufs[NTDX][TDX_BUF_SIZE];
++struct rx_desc rx_queue[NRDX] __attribute__((aligned(16)));
++uint8_t rx_bufs[NRDX][RDX_BUF_SIZE];
+ 
+ // Function Declartions
+-
+ int e1000_attach(struct pci_func *);
+ static void transmit_init(void);
+-int transmit_packet(void *buf, uint32_t buf_len);
++static void receive_init(void);
++int transmit_packet(void *, uint32_t );
+ 
+ #endif	// JOS_KERN_E1000_H
+-- 
+1.9.1
+

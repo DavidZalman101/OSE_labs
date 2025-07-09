@@ -1,0 +1,152 @@
+From feea1913a4b17f55f0bf0f0e98e0dd12dc030226 Mon Sep 17 00:00:00 2001
+From: DavidZalman101 <davidzalman.101@gmail.com>
+Date: Thu, 26 Jun 2025 16:09:09 +0300
+Subject: [PATCH 05/12] lab6 - Exercise 5.
+
+---
+ kern/e1000.c | 51 ++++++++++++++++++++++++++++++++++++++++++++++++++-
+ kern/e1000.h | 53 +++++++++++++++++++++++++++++++++++++++++++++++++++--
+ 2 files changed, 101 insertions(+), 3 deletions(-)
+
+diff --git a/kern/e1000.c b/kern/e1000.c
+index f4afc02..e35bf0f 100644
+--- a/kern/e1000.c
++++ b/kern/e1000.c
+@@ -1,5 +1,4 @@
+ #include <kern/e1000.h>
+-#include <kern/pmap.h>
+ 
+ // LAB 6: Your driver code here
+ 
+@@ -25,5 +24,55 @@ e1000_attach(struct pci_func *pcif)
+ 
+ 	// test - print the device status register - expecting 0x80080783
+ 	cprintf("E1000 status = [%x]\n", E1000_REG(E1000_STATUS));
++
++	// Transmit Initialization
++	transmit_init();
++
+ 	return 0;
+ }
++
++/*
++	Transmit Initialization - 14.5
++	- Allocate memory for the transmit descriptor list.
++	- Program the transmit descriptor base address registers.
++	- Set the transmit descriptor length register.
++	- Initialize the transmit descriptor head and tail.
++	- Initialize the transmit control register.
++	- Initialize the transmit inter packet gap register.
++*/
++static void
++transmit_init(void)
++{
++	uint32_t i;
++
++	// mem init
++	memset(tx_queue, 0, sizeof(tx_queue));
++	memset(tx_bufs, 0, sizeof(tx_bufs));
++	assert((PADDR((void*) tx_queue) & 0xF) == 0x0); // 16-bytes aligned
++
++	for (i = 0; i < NTDX; i++)
++		tx_queue[i].buf_addr = PADDR(&tx_bufs[i]);
++
++	// base init
++	E1000_REG(E1000_TDBAL) = PADDR((void*)tx_queue);
++	E1000_REG(E1000_TDBAH) = 0x0;
++
++	// len init
++	assert((sizeof(tx_queue) & 0x7F) == 0); // 128-byte aligned
++	E1000_REG(E1000_TDBAH) = sizeof(tx_queue);
++
++	// head & tail init
++	E1000_REG(E1000_TDH) = 0x0;
++	E1000_REG(E1000_TDT) = 0x0;
++
++	// control init
++	E1000_REG(E1000_TCTL) = 0x0;
++	E1000_REG(E1000_TCTL) |= (E1000_TCTL_EN)    |
++							 (E1000_TCTL_PSP)   |
++							 (0x10 << E1000_TCTL_CT_SHIFT) |
++							 (0x40 & E1000_TCTL_COLD_SHIFT);
++
++	// Inter packet gap init
++	E1000_REG(E1000_TIPG) = 0xa;
++	E1000_REG(E1000_TIPG) = (0x8 << 10) | (0x6 << 20);
++}
+diff --git a/kern/e1000.h b/kern/e1000.h
+index 1de05a6..c27adb0 100644
+--- a/kern/e1000.h
++++ b/kern/e1000.h
+@@ -3,6 +3,8 @@
+ 
+ // Includes
+ #include <kern/pci.h>
++#include <kern/pmap.h>
++#include <inc/string.h>
+ 
+ // Defines
+ #define E1000_VEN_ID 0x8086
+@@ -21,10 +23,57 @@
+ 	A - register array.
+ */
+ #define E1000_REG(offset) (*(volatile uint32_t*)(e1000_base + offset)) /* Read Register at offset */
+-#define E1000_STATUS   0x00008  /* Device Status - RO */
+ 
++#define E1000_CTRL     0x00000  /* Device Control - RW       */
++#define E1000_STATUS   0x00008  /* Device Status - RO        */
++#define E1000_TCTL     0x00400  /* Transmit Control - RW     */
++#define E1000_TIPG     0x00410  /* Transmit Control - RW     */
++#define E1000_TDBAL    0x03800  /* TX Base Address Low - RW  */
++#define E1000_TDBAH    0x03804  /* TX Base Address High - RW */
++#define E1000_TDLEN    0x03808  /* TX Length - RW            */
++#define E1000_TDH      0x03810  /* TX Head - RW              */
++#define E1000_TDT      0x03818  /* TX Tail - RW              */
+ 
+-int e1000_attach(struct pci_func *);
++/* Transmit Control */
++#define E1000_TCTL_RST    0x00000001    /* software reset */
++#define E1000_TCTL_EN     0x00000002    /* enable tx */
++#define E1000_TCTL_BCE    0x00000004    /* busy check enable */
++#define E1000_TCTL_PSP    0x00000008    /* pad short packets */
++#define E1000_TCTL_CT     0x00000ff0    /* collision threshold */
++#define E1000_TCTL_COLD   0x003ff000    /* collision distance */
++#define E1000_TCTL_SWXOFF 0x00400000    /* SW Xoff transmission */
++#define E1000_TCTL_PBE    0x00800000    /* Packet Burst Enable */
++#define E1000_TCTL_RTLC   0x01000000    /* Re-transmit on late collision */
++#define E1000_TCTL_NRTU   0x02000000    /* No Re-transmit on underrun */
++#define E1000_TCTL_MULR   0x10000000    /* Multiple request support */
++
++#define E1000_TCTL_CT_SHIFT       0x04    /* collision threshold shift */
++#define E1000_TCTL_COLD_SHIFT     0x0c    /* collision distance shift  */
++
++// Constants
++#define NTDX           64       /* Number of TDESC           */
++#define NTDX_BUF_SIZE  1536     /* Tranmist Buffer Size      */
++
++// Structures
++// Transmit Descriptor (TDESC) Layout - Legacy Mode
++struct tx_desc {
++	uint64_t buf_addr;
++	uint16_t len;
++	uint8_t cso;
++	uint8_t cmd;
++	uint8_t status;
++	uint8_t css;
++	uint16_t special;
++}__attribute__((packed)) ;
++
++// Globals vars
+ volatile uint8_t *e1000_base;
++struct tx_desc tx_queue[NTDX] __attribute__((aligned(16)));
++uint8_t tx_bufs[NTDX][NTDX_BUF_SIZE];
++
++// Function Declartions
++
++int e1000_attach(struct pci_func *);
++static void transmit_init(void);
+ 
+ #endif	// JOS_KERN_E1000_H
+-- 
+1.9.1
+

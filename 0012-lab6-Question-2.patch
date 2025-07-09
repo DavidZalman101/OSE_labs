@@ -1,0 +1,30 @@
+From 4090c12e35d2aa1b779bbd7150878ba9fae4fad7 Mon Sep 17 00:00:00 2001
+From: DavidZalman101 <davidzalman.101@gmail.com>
+Date: Wed, 9 Jul 2025 11:35:38 +0300
+Subject: [PATCH 12/12] lab6 Question 2.
+
+---
+ answers-lab6.txt | 10 ++++++++++
+ 1 file changed, 10 insertions(+)
+
+diff --git a/answers-lab6.txt b/answers-lab6.txt
+index d5cfb44..096203f 100644
+--- a/answers-lab6.txt
++++ b/answers-lab6.txt
+@@ -7,3 +7,13 @@ Answer
+ 	an appropriate error value. With that informantion, the output_helper_env can be cpu mindful
+ 	by yeilding the cpu, while hoping that the next time it will awake, the queue won't be full
+ 	and a succesfull re-transmit will be completed.
++
++Question 2
++	How did you structure you receive implementation? In particular, what do you do if
++	receive queue is empty and a user environment requests the next incoming packet?
++
++Answer	
++	The Transmit and Recive process is intrrupt driven.
++	When the Recive queue is empty or the Transmit Queeu is full, we place the env
++	to sleep (ENV_NET_WAIT). Once we get an interrupt from the E1000 hardware, we
++	wake the appropriate env. To go and try once more to read/write.
+-- 
+1.9.1
+
