@@ -35,6 +35,7 @@ enum {
 	ENV_DYING,
 	ENV_RUNNABLE,
 	ENV_RUNNING,
+	ENV_NET_WAIT,
 	ENV_NOT_RUNNABLE
 };
 
@@ -42,6 +43,7 @@ enum {
 enum EnvType {
 	ENV_TYPE_USER = 0,
 	ENV_TYPE_FS,		// File system server
+	ENV_TYPE_NS,		// Network server
 };
 
 struct Env {
@@ -66,6 +68,9 @@ struct Env {
 	uint32_t env_ipc_value;		// Data value sent to us
 	envid_t env_ipc_from;		// envid of the sender
 	int env_ipc_perm;		// Perm of page mapping received
+
+	// lab 6
+	bool e1000_try_to_read_again;
 
 #ifdef IPC_SEND_NO_LOOP
 	// the following fields are essintial to allow the reciever to

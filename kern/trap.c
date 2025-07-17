@@ -13,6 +13,7 @@
 #include <kern/picirq.h>
 #include <kern/cpu.h>
 #include <kern/spinlock.h>
+#include <kern/time.h>
 
 static struct Taskstate ts;
 
@@ -215,6 +216,12 @@ trap_dispatch(struct Trapframe *tf)
 	// interrupt using lapic_eoi() before calling the scheduler!
 	// LAB 4: Your code here.
 
+	// Add time tick increment to clock interrupts.
+	// Be careful! In multiprocessors, clock interrupts are
+	// triggered on every CPU.
+	// LAB 6: Your code here.
+
+
 	// Handle keyboard and serial interrupts.
 	// LAB 5: Your code here.
 
@@ -248,6 +255,8 @@ trap_dispatch(struct Trapframe *tf)
 
 		// clock interrupt
 		case IRQ_OFFSET	+ IRQ_TIMER:
+			if (thiscpu->cpu_id == 0)
+				time_tick();
 			lapic_eoi();
 			sched_yield(); // never returns
 
@@ -260,6 +269,15 @@ trap_dispatch(struct Trapframe *tf)
 		case IRQ_OFFSET + IRQ_SERIAL:
 			serial_intr();
 			return;
+
+		// e1000 interrupt
+		case IRQ_OFFSET + IRQ_E1000:
+			//cprintf("~~~> kern/trap: Caught IRQ_OFFSET + IRQ_E1000 Intrrupt\n");
+			e1000_interrupt();	
+			lapic_eoi();
+			irq_eoi();
+			return;
+			
 
 		default:
 			goto bad;

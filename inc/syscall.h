@@ -17,6 +17,12 @@ enum {
 	SYS_yield,
 	SYS_ipc_try_send,
 	SYS_ipc_recv,
+	SYS_time_msec,
+	SYS_net_send,
+	SYS_net_try_recv,
+	SYS_net_get_hwaddr,
+	SYS_e1000_map_buffers,
+	SYS_e1000_receive_packet_done,
 	NSYSCALLS
 };
 

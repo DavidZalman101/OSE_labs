@@ -11,6 +11,8 @@
 #include <kern/syscall.h>
 #include <kern/console.h>
 #include <kern/sched.h>
+#include <kern/time.h>
+#include <kern/e1000.h>
 
 // Print a string to the system console.
 // The string is exactly 'len' characters long.
@@ -551,6 +553,120 @@ sys_ipc_recv(void *dstva)
 	return 0;
 }
 
+// Return the current time.
+static int
+sys_time_msec(void)
+{
+	// LAB 6: Your code here.
+	return time_msec();
+}
+
+/*
+	Transmit a packet with E1000.
+	return values:
+		-E1000_ERR_IVALID_ARG
+		-E1000_ERR_TX_PKT_TOO_BIG
+		-E1000_ERR_TX_QUEUE_FULL
+		0 (Success)
+*/
+static int
+sys_net_try_send(void *buf, uint32_t buf_len)
+{
+	user_mem_assert(curenv, buf, buf_len, PTE_U);
+
+	void *va = ROUNDDOWN(buf, PGSIZE);
+	int offset = (uintptr_t) buf - (uintptr_t)va;
+	struct PageInfo *p = page_lookup(curenv->env_pgdir, va, NULL);
+	physaddr_t pa = page2pa(p);
+	void *buf_pa = (uint8_t*)pa + offset;
+
+	// Increment refrence count before giving hardware
+	p->pp_ref++; // Prevent page from bring freed
+
+	int res = transmit_packet((uint8_t*) buf_pa, buf_len);
+
+	if (res == -E1000_ERR_TX_QUEUE_FULL) {
+		// go sleep
+		curenv->env_tf.tf_regs.reg_eax = -E1000_ERR_RX_QUEUE_EMPTY;
+		curenv->env_status = ENV_NET_WAIT;
+		sched_yield();
+	}
+
+	return res;
+}
+
+/*
+	Recieve a packet with E1000.
+	return values:
+		-E1000_ERR_IVALID_ARG
+		-E1000_ERR_RX_PKT_TOO_BIG
+		-E1000_ERR_RX_QUEUE_FULL
+		0+ = number of bytes read from buffer (Success)
+*/
+static int
+sys_net_try_recv(uint32_t *buf_len)
+{
+	int res = receive_packet(buf_len);
+
+	if (res == -E1000_ERR_RX_QUEUE_EMPTY) {
+		// go sleep
+		curenv->env_tf.tf_regs.reg_eax = -E1000_ERR_RX_QUEUE_EMPTY;
+		curenv->env_status = ENV_NET_WAIT;
+		sched_yield();
+	}
+
+	return res;
+}
+
+static int
+sys_net_get_hwaddr(void *buf, size_t size)
+{
+	if (size < 6)
+		return -E_INVAL;
+	
+	uint64_t hwaddr = e1000_eeprom_get_hwaddr();
+	memcpy(buf, (uint8_t*)&hwaddr, 6);
+	return 0;
+}
+
+static int
+sys_e1000_map_buffers(void *va)
+{
+	int i;
+	uintptr_t buffer_va;
+	pte_t *pte;
+
+	for (i = 0; i < NRDX; i++) {
+
+		buffer_va = (uintptr_t)rx_bufs[i];
+
+		assert(buffer_va % PGSIZE == 0);
+		assert(PADDR((void*)buffer_va) % PGSIZE == 0);
+
+		pte = pgdir_walk(curenv->env_pgdir, va + i * PGSIZE, 1);
+		assert(!(*pte & PTE_P));
+		*pte = PADDR(rx_bufs[i]) | PTE_P | PTE_U | PTE_W;
+		invlpg(va);
+	}
+
+	return 0;
+}
+
+static int
+sys_e1000_receive_packet_done(int buf_idx)
+{
+	int res = receive_packet_done(buf_idx);
+
+	if (res < 0) {
+		// go sleep
+		curenv->env_tf.tf_regs.reg_eax = res;
+		curenv->env_status = ENV_NET_WAIT;
+		sched_yield();
+	}
+
+	return res;
+}
+
 // Dispatches to the correct kernel function, passing the arguments.
 int32_t
 syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, uint32_t a5)
@@ -617,6 +733,30 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 
 		case SYS_env_set_trapframe:
 			r_val = sys_env_set_trapframe((envid_t) a1, (struct Trapframe*) a2);
+			goto done;
+
+		case SYS_time_msec:
+			r_val = sys_time_msec();
+			goto done;
+
+		case SYS_net_send:
+			r_val = sys_net_try_send((void*) a1, (uint32_t) a2);
+			goto done;
+
+		case SYS_net_try_recv:
+			r_val = sys_net_try_recv((uint32_t*) a1);
+			goto done;
+
+		case SYS_net_get_hwaddr:
+			r_val = sys_net_get_hwaddr((void*) a1, (uint32_t) a2);
+			goto done;
+
+		case SYS_e1000_map_buffers:
+			r_val = sys_e1000_map_buffers((void*) a1);
+			goto done;
+
+		case SYS_e1000_receive_packet_done:
+			r_val = sys_e1000_receive_packet_done((int) a1);
 			goto done;
 
 		default:

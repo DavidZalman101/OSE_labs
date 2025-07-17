@@ -20,6 +20,8 @@
 #include <inc/fs.h>
 #include <inc/fd.h>
 #include <inc/args.h>
+#include <inc/malloc.h>
+#include <inc/ns.h>
 
 #define USED(x)		(void)(x)
 
@@ -57,6 +59,12 @@ int	sys_page_map(envid_t src_env, void *src_pg,
 int	sys_page_unmap(envid_t env, void *pg);
 int	sys_ipc_try_send(envid_t to_env, uint32_t value, void *pg, int perm);
 int	sys_ipc_recv(void *rcv_pg);
+unsigned int sys_time_msec(void);
+int sys_net_try_send(void *buf, uint32_t buf_len);
+int sys_net_try_recv(uint32_t *buf_len);
+int sys_net_get_hwaddr(void *buf, size_t size);
+int sys_e1000_map_buffers(void *va);
+int sys_e1000_receive_packet_done(int);
 
 // This must be inlined.  Exercise for reader: why?
 static __inline envid_t __attribute__((always_inline))
@@ -101,6 +109,24 @@ int	sync(void);
 // pageref.c
 int	pageref(void *addr);
 
+// sockets.c
+int     accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int     bind(int s, struct sockaddr *name, socklen_t namelen);
+int     shutdown(int s, int how);
+int     connect(int s, const struct sockaddr *name, socklen_t namelen);
+int     listen(int s, int backlog);
+int     socket(int domain, int type, int protocol);
+
+// nsipc.c
+int     nsipc_accept(int s, struct sockaddr *addr, socklen_t *addrlen);
+int     nsipc_bind(int s, struct sockaddr *name, socklen_t namelen);
+int     nsipc_shutdown(int s, int how);
+int     nsipc_close(int s);
+int     nsipc_connect(int s, const struct sockaddr *name, socklen_t namelen);
+int     nsipc_listen(int s, int backlog);
+int     nsipc_recv(int s, void *mem, int len, unsigned int flags);
+int     nsipc_send(int s, const void *buf, int size, unsigned int flags);
+int     nsipc_socket(int domain, int type, int protocol);
 
 // spawn.c
 envid_t	spawn(const char *program, const char **argv);
@@ -118,6 +144,7 @@ int	pipeisclosed(int pipefd);
 
 // wait.c
 void	wait(envid_t env);
+
 
 /* File open modes */
 #define	O_RDONLY	0x0000		/* open for reading only */

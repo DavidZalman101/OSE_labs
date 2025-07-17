@@ -117,3 +117,38 @@ sys_ipc_recv(void *dstva)
 	return syscall(SYS_ipc_recv, 1, (uint32_t)dstva, 0, 0, 0, 0);
 }
 
+unsigned int
+sys_time_msec(void)
+{
+	return (unsigned int) syscall(SYS_time_msec, 0, 0, 0, 0, 0, 0);
+}
+
+int
+sys_net_try_send(void *buf, uint32_t buf_len)
+{
+	return syscall(SYS_net_send, 0, (uint32_t)buf, (uint32_t)buf_len, 0, 0, 0);
+}
+
+int
+sys_net_try_recv(uint32_t* buf_len)
+{
+	return syscall(SYS_net_try_recv, 0, (uint32_t)buf_len, 0, 0, 0, 0);
+}
+
+int
+sys_net_get_hwaddr(void *buf, uint32_t len)
+{
+	return syscall(SYS_net_get_hwaddr, 0, (uint32_t)buf, (uint32_t)len, 0, 0, 0);
+}
+
+int
+sys_e1000_map_buffers(void *va)
+{
+	return syscall(SYS_e1000_map_buffers, 0, (uint32_t)va, 0, 0, 0, 0);
+}
+
+int
+sys_e1000_receive_packet_done(int buf_idx)
+{
+	return syscall(SYS_e1000_receive_packet_done, 0, (uint32_t)buf_idx, 0, 0, 0, 0);
+}

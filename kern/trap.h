@@ -6,6 +6,7 @@
 # error "This is a JOS kernel header; user programs should not #include it"
 #endif
 
+#include <kern/e1000.h>
 #include <inc/trap.h>
 #include <inc/mmu.h>
 
